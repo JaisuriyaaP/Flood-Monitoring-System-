@@ -1,0 +1,88 @@
+#include "ThingSpeak.h"
+#include <ESP8266WiFi.h>
+#define rainAnalog A0
+const int trigPin1 = 5;
+const int echoPin1 = 4;
+const int redled = 0;
+const int rainDigital = 12;
+const int led = 13;
+const int buzzer = 16;
+long ch_no = 2092521;
+const char * write_api = "ASGCZBPOCS61Z4ZH";//Replace with Thingspeak write
+API
+char ssid[] = "vivo1938";
+char pass[] = "Jaigo@2012";
+unsigned long startMillis;
+unsigned long currentMillis;
+const unsigned long period = 10000;
+WiFiClient client;
+long duration1;
+int distance1;
+void setup()
+{
+pinMode(trigPin1, OUTPUT);
+pinMode(echoPin1, INPUT);
+pinMode(redled, OUTPUT);
+digitalWrite(redled, LOW);
+pinMode(rainDigital, INPUT);
+pinMode(led,OUTPUT); 
+pinMode(buzzer,OUTPUT); 
+Serial.begin(9600);
+WiFi.begin(ssid, pass);
+while (WiFi.status() != WL_CONNECTED)
+{
+ delay(500);
+ Serial.print(".");
+}
+Serial.println("WiFi connected");
+Serial.println(WiFi.localIP());
+ThingSpeak.begin(client);
+ startMillis = millis(); //initial start time
+}
+void loop()
+{
+digitalWrite(trigPin1, LOW);
+delayMicroseconds(2);
+digitalWrite(trigPin1, HIGH);
+delayMicroseconds(10);
+digitalWrite(trigPin1, LOW);
+ duration1 = pulseIn(echoPin1, HIGH);
+ distance1 = duration1 * 0.034 / 2;
+int rainAnalogVal = analogRead(rainAnalog);
+int rainDigitalVal = digitalRead(rainDigital);
+Serial.print("Rain Analog value = ");
+Serial.println(rainAnalogVal);
+ //Serial.print("\t");
+Serial.print("Rain Digital value = ");
+Serial.println(rainDigitalVal);
+ //Serial.print("\t");
+Serial.print("water level from ultrasonic sensor = ");
+Serial.println(distance1);
+delay(2000);
+if (distance1 < 4)
+{
+ digitalWrite(redled, HIGH);
+ digitalWrite(buzzer,HIGH); 
+}
+else
+{
+ digitalWrite(redled, LOW);
+ digitalWrite(buzzer,LOW);
+}
+if (rainAnalogVal<720){
+Serial.println("Heavy rain");
+digitalWrite(led,HIGH);
+}
+else{
+Serial.println("Not Heavy rain");
+digitalWrite(led,LOW);
+}
+ currentMillis = millis();
+if (currentMillis - startMillis >= period)
+{
+ ThingSpeak.setField(1, distance1); 
+ ThingSpeak.setField(2, rainAnalogVal); 
+ ThingSpeak.writeFields(ch_no, write_api);
+ startMillis = currentMillis;
+}
+}
